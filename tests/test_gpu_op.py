@@ -1,4 +1,11 @@
+import sys
 import numpy as np
+from os.path import dirname, abspath, join
+
+dlsys_path = join(abspath(dirname(__file__)), "../python")
+if dlsys_path not in sys.path:
+    sys.path.append(dlsys_path)
+
 from dlsys import ndarray, gpu_op, autodiff
 
 

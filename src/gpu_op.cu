@@ -3,6 +3,13 @@
 #include <cstdio>
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
+#include <stdio.h>
+
+const int CUDA_NUM_THREADS = 1024;
+
+inline int CUDA_GET_BLOCKS(const int n){
+	return (n + CUDA_NUM_THREADS - 1) / CUDA_NUM_THREADS;
+}
 
 /* TODO: Your code here */
 /* all your GPU kernel code, e.g. matrix_softmax_cross_entropy_kernel */
@@ -52,7 +59,17 @@ __global__ void matrix_softmax_cross_entropy_kernel(int nrow, int ncol,
   }
 }
 
+__global__ void array_set_kernel(int64_t size, float *input, float value){
+
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  if (index < size){
+    input[index] = value;
+  }
+}
+
 int DLGpuArraySet(DLArrayHandle arr, float value) { /* TODO: Your code here */
+  int size = arr->size();
+  array_set_kernel<<<CUDA_GET_BLOCKS(size), CUDA_NUM_THREADS>>>(size, (float*)arr->data, value);
   return 0;
 }
 

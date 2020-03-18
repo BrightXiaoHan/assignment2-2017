@@ -50,6 +50,14 @@ DLSYS_EXTERN_C {
     int ndim;
     /*! \brief The shape of the tensor */
     int64_t *shape;
+
+    int size(){
+      int s = 1;
+      for (int i = 0; i < ndim; i++){
+        s *= shape[i];
+      }
+      return s;
+    }
   } DLArray;
 
 } // DLSYS_EXTERN_C

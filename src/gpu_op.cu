@@ -59,9 +59,9 @@ __global__ void matrix_softmax_cross_entropy_kernel(int nrow, int ncol,
   }
 }
 
-__global__ void array_set_kernel(int64_t size, float *input, float value){
+__global__ void array_set_kernel(array_size_t size, float *input, float value){
 
-  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  array_size_t index = blockIdx.x * blockDim.x + threadIdx.x;
   if (index < size){
     input[index] = value;
   }

@@ -7,7 +7,7 @@
 
 const int CUDA_NUM_THREADS = 1024;
 
-inline int CUDA_GET_BLOCKS(const int n){
+inline int CUDA_GET_BLOCKS(const array_size_t n){
 	return (n + CUDA_NUM_THREADS - 1) / CUDA_NUM_THREADS;
 }
 
@@ -68,7 +68,7 @@ __global__ void array_set_kernel(int64_t size, float *input, float value){
 }
 
 int DLGpuArraySet(DLArrayHandle arr, float value) { /* TODO: Your code here */
-  int size = arr->size();
+  array_size_t size = arr->size();
   array_set_kernel<<<CUDA_GET_BLOCKS(size), CUDA_NUM_THREADS>>>(size, (float*)arr->data, value);
   return 0;
 }

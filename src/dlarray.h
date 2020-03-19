@@ -15,6 +15,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef int64_t array_size_t;
+
 DLSYS_EXTERN_C {
   /*!
    * \brief The device type in DLContext.
@@ -49,10 +51,10 @@ DLSYS_EXTERN_C {
     /*! \brief Number of dimensions */
     int ndim;
     /*! \brief The shape of the tensor */
-    int64_t *shape;
+    array_size_t *shape;
 
-    int size(){
-      int s = 1;
+    array_size_t size(){
+      array_size_t s = 1;
       for (int i = 0; i < ndim; i++){
         s *= shape[i];
       }

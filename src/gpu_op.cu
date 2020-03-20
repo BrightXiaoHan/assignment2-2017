@@ -292,6 +292,34 @@ int DLGpuMatrixMultiply(const DLArrayHandle matA, bool transposeA,
   /* TODO: Your code here */
   // Hint: use cublas
   // cublas assume matrix is column major
+  assert(matA->ndim == 2 && matB->ndim == 2 && matC->ndim == 2);
+
+  cublasHandle_t handle;
+  cublasStatus_t stat;
+  stat = cublasCreate(&handle);
+  if (stat != CUBLAS_STATUS_SUCCESS) {
+      printf ("CUBLAS initialization failed\n");
+      return EXIT_FAILURE;
+  }
+  
+// cause cublas is column major and DLArray is row major, converse fomular "A * B = C" to "B_trans * A_trans = C_trans".
+
+  float alpha = 1;
+  float beta = 0;
+
+  int m = matC->shape[1];
+  int n = matC->shape[0];
+  int k = transposeA ? matA->shape[0]:matA->shape[1];  
+
+  int lda = matA->shape[1];
+  int ldb = matB->shape[1];
+  int ldc = matC->shape[1];
+
+  cublasOperation_t cudaTransA = transposeA? CUBLAS_OP_T:CUBLAS_OP_N;
+  cublasOperation_t cudaTransB = transposeB? CUBLAS_OP_T:CUBLAS_OP_N;
+
+  cublasSgemm(handle, cudaTransB, cudaTransA, m, n, k, &alpha, (const float *)matB->data, ldb, (const float *)matA->data, lda, &beta, (float *)matC->data, ldc);
+  cublasDestroy(handle);
   return 0;
 }
 

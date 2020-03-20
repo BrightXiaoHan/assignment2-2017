@@ -213,10 +213,41 @@ int DLGpuMatrixElementwiseAddByConst(const DLArrayHandle input, float val,
   return 0;
 }
 
+__global__ void matrix_elementwise_multiply_kernel(array_size_t size,
+  const float *input_a,
+  const float *input_b,
+  float *output)
+{
+  array_size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+  output[index] = input_a[index] * input_b[index];
+}
+
+
 int DLGpuMatrixElementwiseMultiply(const DLArrayHandle matA,
                                    const DLArrayHandle matB,
                                    DLArrayHandle output) {
   /* TODO: Your code here */
+  assert(matA->ndim == 2);
+  assert(matB->ndim == 2);
+  assert(output->ndim == 2);
+  for (int i = 0; i < output->ndim; i++){
+    assert(matA->shape[i] == matB->shape[i]);
+    assert(matA->shape[i] == output->shape[i]);
+  }
+
+  array_size_t size = output->size();
+
+  dim3 threads;
+  dim3 blocks;
+  if (size <= 1024){
+    threads.x = size;
+    blocks.x = 1;
+  }else{
+    threads.x = 1024;
+    blocks.x = (size + 1023) / 1024;
+  }
+  matrix_elementwise_multiply_kernel<<<blocks, threads>>>(size, (const float *)matA->data, (const float *)matB->data, (float *)output->data);
+
   return 0;
 }
 

@@ -73,8 +73,31 @@ int DLGpuArraySet(DLArrayHandle arr, float value) { /* TODO: Your code here */
   return 0;
 }
 
+__global__ void broad_cast_kernel(array_size_t size, 
+                                  array_size_t bc_dim, 
+                                  const float *input, 
+                                  float *output)
+{
+  extern __shared__ float value[];
+  if (threadIdx.x == 0){
+    *value = input[blockIdx.x];
+  }
+  __syncthreads();
+  array_size_t index = size * threadIdx.x + blockIdx.x;
+  output[index] = *value;
+}
+
 int DLGpuBroadcastTo(const DLArrayHandle input, DLArrayHandle output) {
   /* TODO: Your code here */
+  assert(input->ndim + 1 == output->ndim);
+  for (int i = 0; i < input->ndim; i++){
+    assert(input->shape[i] == output->shape[i+1]);
+  }
+  array_size_t input_size = input->size();
+  array_size_t bc_dim = output->shape[0];
+
+  broad_cast_kernel<<<input_size, bc_dim, sizeof(float)>>>(input_size, bc_dim, (const float *)input->data, (float *)output->data);
+
   return 0;
 }
 

@@ -101,8 +101,43 @@ int DLGpuBroadcastTo(const DLArrayHandle input, DLArrayHandle output) {
   return 0;
 }
 
+__global__ void reduce_sum_axis_zero_kernel(array_size_t reduce_dim, 
+                                            array_size_t output_size,
+                                            const float *input,
+                                            float *output)
+{
+  float sum = 0;
+  array_size_t output_index = blockIdx.x * blockDim.x + threadIdx.x;
+  for (int i=0; i < reduce_dim; i++){
+    array_size_t index = i * output_size + output_index;
+    sum += input[index];
+  }
+  output[output_index] = sum;
+}
+
+
 int DLGpuReduceSumAxisZero(const DLArrayHandle input, DLArrayHandle output) {
   /* TODO: Your code here */
+  assert(input->ndim - 1 == output->ndim);
+  for (int i = 0; i < output->ndim; i++){
+    assert(output->shape[i] == input->shape[i+1]);
+  }
+  array_size_t output_size = output->size();
+  array_size_t reduce_dim = input->shape[0];
+
+  dim3 threads;
+  dim3 blocks;
+
+  if (output_size <= 1024){
+    threads.x = output_size;
+    blocks.x = 1;
+  }else{
+    threads.x = 1024;
+    blocks.x = (output_size + 1023) / 1024;
+  }
+
+  reduce_sum_axis_zero_kernel<<<blocks, threads>>>(reduce_dim, output_size, (const float*)input->data, (float *)output->data);
+
   return 0;
 }
 

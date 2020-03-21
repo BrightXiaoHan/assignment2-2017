@@ -395,8 +395,53 @@ int DLGpuReluGradient(const DLArrayHandle input, const DLArrayHandle in_grad,
   return 0;
 }
 
+__global__ void softmax_kernel(
+  array_size_t nrow,
+  array_size_t ncol,
+  const float *input,
+  float *output
+){
+  array_size_t y = blockDim.x * blockIdx.x + threadIdx.x;
+  input += y * ncol;
+  output += y * ncol;
+
+  float max = 0;
+  for (int i = 0; i < ncol; i++){
+    max = max > input[i] ? max: input[i];
+  }
+
+  float deduce_exp_sum = 0;
+  for (int i = 0; i < ncol; i++){
+    deduce_exp_sum += exp(input[i] - max);
+  }
+
+  for (int i = 0; i < ncol; i++){
+    output[i] = exp(input[i] - max) / deduce_exp_sum;
+  }
+}
+
 int DLGpuSoftmax(const DLArrayHandle input, DLArrayHandle output) {
   /* TODO: Your code here */
+  assert(input->ndim == 2);
+  assert(output->ndim == 2);
+  assert(input->shape[0] == output->shape[0] && input->shape[1] == output->shape[1]);
+
+  array_size_t nrow = input->shape[0];
+  array_size_t ncol = input->shape[1];
+
+  dim3 blocks;
+  dim3 threads;
+
+  if (nrow <= 1024){
+    threads.x = nrow;
+    blocks.x = 1;
+  }else{
+    threads.x = 1024;
+    blocks.x = (nrow + 1023) / 1024;
+  }
+
+  softmax_kernel<<<blocks, threads>>>(nrow, ncol, (const float *)input->data, (float *)output->data);
+
   return 0;
 }
 

@@ -153,7 +153,10 @@ class AddOp(Op):
     def infer_shape(self, node, input_shapes):
         """Need to handle input_vals[0].shape != input_vals[1].shape"""
         """TODO: Your code here"""
-
+        if input_shapes[0] == input_shapes[1]:
+            return input_shapes[0]
+        assert input_shapes[0] == (1,) or input_shapes[1] == (1,), "Input shapes of add op is illegal"
+        return input_shapes[0] if input_shapes[1] == (1,) else input_shapes[1]
 
 class AddByConstOp(Op):
     def __call__(self, node_A, const_val):
@@ -176,6 +179,7 @@ class AddByConstOp(Op):
 
     def infer_shape(self, node, input_shapes):
         """TODO: Your code here"""
+        return input_shapes[0]
 
 
 class MulOp(Op):
@@ -209,7 +213,10 @@ class MulOp(Op):
     def infer_shape(self, node, input_shapes):
         """Need to handle input_vals[0].shape != input_vals[1].shape"""
         """TODO: Your code here"""
-
+        if input_shapes[0] == input_shapes[1]:
+            return input_shapes[0]
+        assert input_shapes[0] == (1,) or input_shapes[1] == (1,), "Input shapes of add op is illegal. Node name %s." % node.name
+        return input_shapes[0] if input_shapes[1] == (1,) else input_shapes[1]
 
 class MulByConstOp(Op):
     def __call__(self, node_A, const_val):
@@ -232,6 +239,7 @@ class MulByConstOp(Op):
 
     def infer_shape(self, node, input_shapes):
         """TODO: Your code here"""
+        return input_shapes[0]
 
 
 class MatMulOp(Op):
@@ -300,6 +308,9 @@ class MatMulOp(Op):
 
     def infer_shape(self, node, input_shapes):
         """TODO: Your code here"""
+        output_shape_0 = input_shapes[0][0] if not node.matmul_attr_trans_A else input_shapes[0][1]
+        output_sahpe_1 = input_shapes[1][1] if not node.matmul_attr_trans_B else input_shapes[1][0]
+        return (output_shape_0, output_sahpe_1)
 
 
 class PlaceholderOp(Op):
@@ -339,6 +350,10 @@ class ZerosLikeOp(Op):
     def infer_shape(self, node, input_shapes):
         """If input_shape is a vector, simpler to return (1,)"""
         """TODO: Your code here"""
+        assert len(input_shapes) == 0
+        if len(input_shapes[0]) == 1:
+            return (1,)
+        return input_shapes[0]
 
 
 class OnesLikeOp(Op):
@@ -362,7 +377,10 @@ class OnesLikeOp(Op):
     def infer_shape(self, node, input_shapes):
         """If input_shape is a vector, simpler to return (1,)"""
         """TODO: Your code here"""
-
+        assert len(input_shapes) == 1
+        if len(input_shapes[0]) == 1:
+            return (1,)
+        return input_shapes[0]
 
 class ReduceSumAxisZeroOp(Op):
     def __call__(self, node_A):
@@ -391,7 +409,11 @@ class ReduceSumAxisZeroOp(Op):
         for vector, simpler to do (3,)->(1,)
         """
         """TODO: Your code here"""
-
+        assert len(input_shapes) == 1
+        if len(input_shapes[0]) == 1:
+            return (1,)
+        else:
+            return input_shapes[0][1:]
 
 class BroadcastToOp(Op):
     def __call__(self, node_A, node_B):
@@ -417,6 +439,9 @@ class BroadcastToOp(Op):
 
     def infer_shape(self, node, input_shapes):
         """TODO: Your code here"""
+        assert len(input_shapes) == 2
+        assert len(input_shapes[0]) <= len(input_shapes[1])
+        return input_shapes[1]
 
 
 def softmax_func(y):
@@ -453,7 +478,8 @@ class SoftmaxCrossEntropyOp(Op):
 
     def infer_shape(self, node, input_shapes):
         """TODO: Your code here"""
-
+        assert len(input_shapes) == 2
+        return (1,)
 
 class SoftmaxOp(Op):
     def __call__(self, node_A):
@@ -476,7 +502,8 @@ class SoftmaxOp(Op):
 
     def infer_shape(self, node, input_shapes):
         """TODO: Your code here"""
-
+        assert len(input_shapes) == 1
+        return input_shapes[0]
 
 class ReluOp(Op):
     def __call__(self, node_A):
@@ -497,6 +524,8 @@ class ReluOp(Op):
 
     def infer_shape(self, node, input_shapes):
         """TODO: Your code here"""
+        assert len(input_shapes) == 1
+        return input_shapes[0]
 
 
 class ReluGradientOp(Op):
@@ -520,6 +549,8 @@ class ReluGradientOp(Op):
 
     def infer_shape(self, node, input_shapes):
         """TODO: Your code here"""
+        assert len(input_shapes) == 1
+        return input_shapes[0]
 
 
 # Create global singletons of operators.

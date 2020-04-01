@@ -602,6 +602,15 @@ class Executor(object):
         feed_shapes: node->shapes mapping for feed_dict nodes.
         """
         """TODO: Your code here"""
+        self.node_to_shape_map = {}
+        self.node_to_shape_map.update(feed_shapes)
+        for node in self.topo_order:
+            if node in self.node_to_shape_map:
+                continue
+            input_shapes = [self.node_to_shape_map[n] for n in node.inputs]
+            output_shapes = node.op.infer_shape(node, input_shapes)
+            self.node_to_shape_map[node] = output_shapes
+
 
     def memory_plan(self, feed_shapes):
         """Allocates ndarray.NDArray for every node except feed_dict nodes.
@@ -621,6 +630,39 @@ class Executor(object):
         feed_shapes: node->shapes mapping for feed_dict nodes.
         """
         """TODO: Your code here"""
+        pool = []
+        self.node_to_arr_map = {}
+        # Calculate how many nodes use the current node as input
+        node_ref_number = {}
+
+        for node in self.topo_order:
+            if node in feed_shapes:
+                continue
+            for input_node in node.inputs:
+                if input_node not in node_ref_number:
+                    node_ref_number[input_node] = 1
+                else:
+                    node_ref_number[input_node] += 1
+
+        for node in self.topo_order:
+            # skip the placeholder node, their memory has already been allocated
+            if node in feed_shapes:
+                continue
+            target_array = None
+            for array in pool:
+                if self.node_to_shape_map[node] == array.shape:
+                    target_array = array
+                    pool.remove(array)
+                    break
+            if target_array is None:
+                target_array = ndarray.empty(self.node_to_shape_map[node], ctx=self.ctx)
+            self.node_to_arr_map[node] = target_array
+            for input_node in node.inputs:
+                node_ref_number[input_node] -= 1
+                if node_ref_number[input_node] == 0:
+                    pool.append(self.node_to_arr_map[input_node])
+
+
 
     def run(self, feed_dict, convert_to_numpy_ret_vals=False):
         """

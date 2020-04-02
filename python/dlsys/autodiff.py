@@ -350,7 +350,7 @@ class ZerosLikeOp(Op):
     def infer_shape(self, node, input_shapes):
         """If input_shape is a vector, simpler to return (1,)"""
         """TODO: Your code here"""
-        assert len(input_shapes) == 0
+        assert len(input_shapes) == 1
         if len(input_shapes[0]) == 1:
             return (1,)
         return input_shapes[0]
@@ -631,6 +631,9 @@ class Executor(object):
         """
         """TODO: Your code here"""
         pool = []
+        if isinstance(self.node_to_arr_map, dict) and self.node_to_arr_map:
+            pool.extend(self.node_to_arr_map.values)
+
         self.node_to_arr_map = {}
         # Calculate how many nodes use the current node as input
         node_ref_number = {}
@@ -658,6 +661,8 @@ class Executor(object):
                 target_array = ndarray.empty(self.node_to_shape_map[node], ctx=self.ctx)
             self.node_to_arr_map[node] = target_array
             for input_node in node.inputs:
+                if input_node in feed_shapes:
+                    continue
                 node_ref_number[input_node] -= 1
                 if node_ref_number[input_node] == 0:
                     pool.append(self.node_to_arr_map[input_node])

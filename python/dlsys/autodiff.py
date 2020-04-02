@@ -549,7 +549,6 @@ class ReluGradientOp(Op):
 
     def infer_shape(self, node, input_shapes):
         """TODO: Your code here"""
-        assert len(input_shapes) == 1
         return input_shapes[0]
 
 

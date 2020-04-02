@@ -154,9 +154,6 @@ __global__ void matrix_elementwise_add_kernel(array_size_t size,
 int DLGpuMatrixElementwiseAdd(const DLArrayHandle matA,
                               const DLArrayHandle matB, DLArrayHandle output) {
   /* TODO: Your code here */
-  assert(matA->ndim == 2);
-  assert(matB->ndim == 2);
-  assert(output->ndim == 2);
   for (int i = 0; i < output->ndim; i++){
     assert(matA->shape[i] == matB->shape[i]);
     assert(matA->shape[i] == output->shape[i]);
@@ -264,8 +261,6 @@ __global__ void matrix_elementwise_multiply_by_const_kernel(
 int DLGpuMatrixMultiplyByConst(const DLArrayHandle input, float val,
                                DLArrayHandle output) {
   /* TODO: Your code here */
-  assert(input->ndim == 2);
-  assert(output->ndim == 2);
   for (int i = 0; i < output->ndim; i++){
     assert(output->shape[i] == input->shape[i]);
   }

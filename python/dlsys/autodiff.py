@@ -589,6 +589,7 @@ class Executor(object):
         self.node_to_shape_map = None
         self.node_to_arr_map = None
         self.feed_shapes = None
+        self.memory_pool = None
 
     def infer_shape(self, feed_shapes):
         """Given shapes of feed_dict nodes, infer shape for all nodes in graph.
@@ -630,42 +631,24 @@ class Executor(object):
         feed_shapes: node->shapes mapping for feed_dict nodes.
         """
         """TODO: Your code here"""
-        pool = []
-        if isinstance(self.node_to_arr_map, dict) and self.node_to_arr_map:
-            pool.extend(self.node_to_arr_map.values)
-
+        if self.memory_pool == None:
+            self.memory_pool = []
+        if self.node_to_arr_map:
+            for node, arr in self.node_to_arr_map:
+                self.memory_pool.append(arr)
         self.node_to_arr_map = {}
-        # Calculate how many nodes use the current node as input
-        node_ref_number = {}
-
-        for node in self.topo_order:
+        for node, shape in self.node_to_shape_map.items():
+            arr_node = None
             if node in feed_shapes:
                 continue
-            for input_node in node.inputs:
-                if input_node not in node_ref_number:
-                    node_ref_number[input_node] = 1
-                else:
-                    node_ref_number[input_node] += 1
-
-        for node in self.topo_order:
-            # skip the placeholder node, their memory has already been allocated
-            if node in feed_shapes:
-                continue
-            target_array = None
-            for array in pool:
-                if self.node_to_shape_map[node] == array.shape:
-                    target_array = array
-                    pool.remove(array)
+            for arr in self.memory_pool:
+                if arr.shape == shape:
+                    arr_node = arr
+                    self.memory_pool.remove(arr)
                     break
-            if target_array is None:
-                target_array = ndarray.empty(self.node_to_shape_map[node], ctx=self.ctx)
-            self.node_to_arr_map[node] = target_array
-            for input_node in node.inputs:
-                if input_node in feed_shapes:
-                    continue
-                node_ref_number[input_node] -= 1
-                if node_ref_number[input_node] == 0:
-                    pool.append(self.node_to_arr_map[input_node])
+            if arr_node == None:
+                arr_node = ndarray.empty(shape, ctx=self.ctx)
+            self.node_to_arr_map[node] = arr_node
 
 
 

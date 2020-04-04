@@ -633,10 +633,10 @@ class Executor(object):
         if self.memory_pool == None:
             self.memory_pool = []
         if self.node_to_arr_map:
-            for node, arr in self.node_to_arr_map:
-                self.memory_pool.append(arr)
+            self.memory_pool.extend(self.node_to_arr_map.values())
         self.node_to_arr_map = {}
-        for node, shape in self.node_to_shape_map.items():
+        for node in self.topo_order:
+            shape = self.node_to_shape_map[node]
             arr_node = None
             if node in feed_shapes:
                 continue

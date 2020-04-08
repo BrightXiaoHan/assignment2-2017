@@ -630,10 +630,21 @@ class Executor(object):
         feed_shapes: node->shapes mapping for feed_dict nodes.
         """
         """TODO: Your code here"""
-        if self.memory_pool == None:
+        if self.memory_pool is None:
             self.memory_pool = []
         if self.node_to_arr_map:
             self.memory_pool.extend(self.node_to_arr_map.values())
+
+        node_to_ref = {}
+        for node in self.topo_order:
+            for i_n in node.inputs:
+                # skip feed node and eval node
+                if i_n in self.feed_shapes or i_n in self.eval_node_list:
+                    continue
+                if i_n not in node_to_ref:
+                    node_to_ref[i_n] = 0
+                node_to_ref[i_n] += 1
+
         self.node_to_arr_map = {}
         for node in self.topo_order:
             shape = self.node_to_shape_map[node]
@@ -645,9 +656,17 @@ class Executor(object):
                     arr_node = arr
                     self.memory_pool.remove(arr)
                     break
-            if arr_node == None:
+            if arr_node is None:
                 arr_node = ndarray.empty(shape, ctx=self.ctx)
             self.node_to_arr_map[node] = arr_node
+            
+            for i_n in node.inputs:
+                # skip feed node and eval node
+                if i_n in self.feed_shapes or i_n in self.eval_node_list:
+                    continue
+                node_to_ref[i_n] -= 1
+                if node_to_ref[i_n] == 0:
+                    self.memory_pool.append(self.node_to_arr_map[i_n])
 
 
 

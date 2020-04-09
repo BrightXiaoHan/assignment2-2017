@@ -135,14 +135,14 @@ class AddOp(Op):
             output_val[:] = input_vals[0] + input_vals[1]
         else:
             if input_vals[0].shape == input_vals[1].shape:
-                gpu_op.matrix_elementwise_add(
-                    input_vals[0], input_vals[1], output_val)
+                gpu_op.matrix_elementwise_add(input_vals[0], input_vals[1],
+                                              output_val)
             else:
-                if input_vals[1].shape == (1,):
+                if input_vals[1].shape == (1, ):
                     const_val = input_vals[1].asnumpy()[0]
                     gpu_op.matrix_elementwise_add_by_const(
                         input_vals[0], const_val, output_val)
-                elif input_vals[0].shape == (1,):
+                elif input_vals[0].shape == (1, ):
                     const_val = input_vals[0].asnumpy()[0]
                     gpu_op.matrix_elementwise_add_by_const(
                         input_vals[1], const_val, output_val)
@@ -155,8 +155,10 @@ class AddOp(Op):
         """TODO: Your code here"""
         if input_shapes[0] == input_shapes[1]:
             return input_shapes[0]
-        assert input_shapes[0] == (1,) or input_shapes[1] == (1,), "Input shapes of add op is illegal"
-        return input_shapes[0] if input_shapes[1] == (1,) else input_shapes[1]
+        assert input_shapes[0] == (1, ) or input_shapes[1] == (
+            1, ), "Input shapes of add op is illegal"
+        return input_shapes[0] if input_shapes[1] == (1, ) else input_shapes[1]
+
 
 class AddByConstOp(Op):
     def __call__(self, node_A, const_val):
@@ -171,8 +173,8 @@ class AddByConstOp(Op):
         if use_numpy:
             output_val[:] = input_vals[0] + node.const_attr
         else:
-            gpu_op.matrix_elementwise_add_by_const(
-                input_vals[0], node.const_attr, output_val)
+            gpu_op.matrix_elementwise_add_by_const(input_vals[0],
+                                                   node.const_attr, output_val)
 
     def gradient(self, node, output_grad):
         return [output_grad]
@@ -195,14 +197,14 @@ class MulOp(Op):
             output_val[:] = input_vals[0] * input_vals[1]
         else:
             if input_vals[0].shape == input_vals[1].shape:
-                gpu_op.matrix_elementwise_multiply(
-                    input_vals[0], input_vals[1], output_val)
+                gpu_op.matrix_elementwise_multiply(input_vals[0],
+                                                   input_vals[1], output_val)
             else:
-                if input_vals[1].shape == (1,):
+                if input_vals[1].shape == (1, ):
                     const_val = input_vals[1].asnumpy()[0]
                     gpu_op.matrix_elementwise_multiply_by_const(
                         input_vals[0], const_val, output_val)
-                elif input_vals[0].shape == (1,):
+                elif input_vals[0].shape == (1, ):
                     const_val = input_vals[0].asnumpy()[0]
                     gpu_op.matrix_elementwise_multiply_by_const(
                         input_vals[1], const_val, output_val)
@@ -215,8 +217,11 @@ class MulOp(Op):
         """TODO: Your code here"""
         if input_shapes[0] == input_shapes[1]:
             return input_shapes[0]
-        assert input_shapes[0] == (1,) or input_shapes[1] == (1,), "Input shapes of add op is illegal. Node name %s." % node.name
-        return input_shapes[0] if input_shapes[1] == (1,) else input_shapes[1]
+        assert input_shapes[0] == (1, ) or input_shapes[1] == (
+            1,
+        ), "Input shapes of add op is illegal. Node name %s." % node.name
+        return input_shapes[0] if input_shapes[1] == (1, ) else input_shapes[1]
+
 
 class MulByConstOp(Op):
     def __call__(self, node_A, const_val):
@@ -248,68 +253,85 @@ class MatMulOp(Op):
         new_node.matmul_attr_trans_A = trans_A
         new_node.matmul_attr_trans_B = trans_B
         new_node.inputs = [node_A, node_B]
-        new_node.name = "MatMul(%s,%s,%s,%s)" % (
-            node_A.name, node_B.name, str(trans_A), str(trans_B))
+        new_node.name = "MatMul(%s,%s,%s,%s)" % (node_A.name, node_B.name,
+                                                 str(trans_A), str(trans_B))
         return new_node
 
     def compute(self, node, input_vals, output_val, use_numpy=True):
         if use_numpy:
-            if ((node.matmul_attr_trans_A is False) and
-                    (node.matmul_attr_trans_B is False)):
+            if ((node.matmul_attr_trans_A is False)
+                    and (node.matmul_attr_trans_B is False)):
                 output_val[:] = np.matmul(input_vals[0], input_vals[1])
-            elif ((node.matmul_attr_trans_A is True) and
-                    (node.matmul_attr_trans_B is False)):
-                output_val[:] = np.matmul(
-                    np.transpose(input_vals[0]), input_vals[1])
-            elif ((node.matmul_attr_trans_A is False) and
-                    (node.matmul_attr_trans_B is True)):
-                output_val[:] = np.matmul(
-                    input_vals[0], np.transpose(input_vals[1]))
-            elif ((node.matmul_attr_trans_A is True) and
-                    (node.matmul_attr_trans_B is True)):
-                output_val[:] = np.matmul(
-                    np.transpose(input_vals[0]), np.transpose(input_vals[1]))
+            elif ((node.matmul_attr_trans_A is True)
+                  and (node.matmul_attr_trans_B is False)):
+                output_val[:] = np.matmul(np.transpose(input_vals[0]),
+                                          input_vals[1])
+            elif ((node.matmul_attr_trans_A is False)
+                  and (node.matmul_attr_trans_B is True)):
+                output_val[:] = np.matmul(input_vals[0],
+                                          np.transpose(input_vals[1]))
+            elif ((node.matmul_attr_trans_A is True)
+                  and (node.matmul_attr_trans_B is True)):
+                output_val[:] = np.matmul(np.transpose(input_vals[0]),
+                                          np.transpose(input_vals[1]))
         else:
-            gpu_op.matrix_multiply(
-                input_vals[0], node.matmul_attr_trans_A,
-                input_vals[1], node.matmul_attr_trans_B,
-                output_val)
+            gpu_op.matrix_multiply(input_vals[0], node.matmul_attr_trans_A,
+                                   input_vals[1], node.matmul_attr_trans_B,
+                                   output_val)
 
     def gradient(self, node, output_grad):
-        if ((node.matmul_attr_trans_A is False) and
-                (node.matmul_attr_trans_B is False)):
+        if ((node.matmul_attr_trans_A is False)
+                and (node.matmul_attr_trans_B is False)):
             # if Y=AB, then dA=dY B^T, dB=A^T dY
-            lhs_grad = matmul_op(
-                output_grad, node.inputs[1], trans_A=False, trans_B=True)
-            rhs_grad = matmul_op(
-                node.inputs[0], output_grad, trans_A=True, trans_B=False)
-        elif ((node.matmul_attr_trans_A is True) and
-                (node.matmul_attr_trans_B is False)):
+            lhs_grad = matmul_op(output_grad,
+                                 node.inputs[1],
+                                 trans_A=False,
+                                 trans_B=True)
+            rhs_grad = matmul_op(node.inputs[0],
+                                 output_grad,
+                                 trans_A=True,
+                                 trans_B=False)
+        elif ((node.matmul_attr_trans_A is True)
+              and (node.matmul_attr_trans_B is False)):
             # if Y=A^T B, then dA=(dY B^T)^T=B dY^T, dB=A^T dY
-            lhs_grad = matmul_op(
-                node.inputs[1], output_grad, trans_A=False, trans_B=True)
-            rhs_grad = matmul_op(
-                node.inputs[0], output_grad, trans_A=True, trans_B=False)
-        elif ((node.matmul_attr_trans_A is False) and
-                (node.matmul_attr_trans_B is True)):
+            lhs_grad = matmul_op(node.inputs[1],
+                                 output_grad,
+                                 trans_A=False,
+                                 trans_B=True)
+            rhs_grad = matmul_op(node.inputs[0],
+                                 output_grad,
+                                 trans_A=True,
+                                 trans_B=False)
+        elif ((node.matmul_attr_trans_A is False)
+              and (node.matmul_attr_trans_B is True)):
             # if Y=A B^T, then dA=dY B^T, dB=(A^T dY)^T=dY^T A
-            lhs_grad = matmul_op(
-                output_grad, node.inputs[1], trans_A=False, trans_B=True)
-            rhs_grad = matmul_op(
-                output_grad, node.inputs[0], trans_A=True, trans_B=False)
-        elif ((node.matmul_attr_trans_A is True) and
-                (node.matmul_attr_trans_B is True)):
+            lhs_grad = matmul_op(output_grad,
+                                 node.inputs[1],
+                                 trans_A=False,
+                                 trans_B=True)
+            rhs_grad = matmul_op(output_grad,
+                                 node.inputs[0],
+                                 trans_A=True,
+                                 trans_B=False)
+        elif ((node.matmul_attr_trans_A is True)
+              and (node.matmul_attr_trans_B is True)):
             # if Y=A^T B^T, then dA=(dY B^T)^T=B dY^T, dB=(A^T dY)^T=dY^T A
-            lhs_grad = matmul_op(
-                node.inputs[1], output_grad, trans_A=False, trans_B=True)
-            rhs_grad = matmul_op(
-                output_grad, node.inputs[0], trans_A=True, trans_B=False)
+            lhs_grad = matmul_op(node.inputs[1],
+                                 output_grad,
+                                 trans_A=False,
+                                 trans_B=True)
+            rhs_grad = matmul_op(output_grad,
+                                 node.inputs[0],
+                                 trans_A=True,
+                                 trans_B=False)
         return [lhs_grad, rhs_grad]
 
     def infer_shape(self, node, input_shapes):
         """TODO: Your code here"""
-        output_shape_0 = input_shapes[0][0] if not node.matmul_attr_trans_A else input_shapes[0][1]
-        output_sahpe_1 = input_shapes[1][1] if not node.matmul_attr_trans_B else input_shapes[1][0]
+        output_shape_0 = input_shapes[0][
+            0] if not node.matmul_attr_trans_A else input_shapes[0][1]
+        output_sahpe_1 = input_shapes[1][
+            1] if not node.matmul_attr_trans_B else input_shapes[1][0]
         return (output_shape_0, output_sahpe_1)
 
 
@@ -352,7 +374,7 @@ class ZerosLikeOp(Op):
         """TODO: Your code here"""
         assert len(input_shapes) == 1
         if len(input_shapes[0]) == 1:
-            return (1,)
+            return (1, )
         return input_shapes[0]
 
 
@@ -379,8 +401,9 @@ class OnesLikeOp(Op):
         """TODO: Your code here"""
         assert len(input_shapes) == 1
         if len(input_shapes[0]) == 1:
-            return (1,)
+            return (1, )
         return input_shapes[0]
+
 
 class ReduceSumAxisZeroOp(Op):
     def __call__(self, node_A):
@@ -395,7 +418,7 @@ class ReduceSumAxisZeroOp(Op):
     def compute(self, node, input_vals, output_val, use_numpy=True):
         assert len(input_vals) == 1
         if use_numpy:
-            assert(isinstance(input_vals[0], np.ndarray))
+            assert (isinstance(input_vals[0], np.ndarray))
             output_val[:] = np.sum(input_vals[0], axis=0)
         else:
             gpu_op.reduce_sum_axis_zero(input_vals[0], output_val)
@@ -411,9 +434,10 @@ class ReduceSumAxisZeroOp(Op):
         """TODO: Your code here"""
         assert len(input_shapes) == 1
         if len(input_shapes[0]) == 1:
-            return (1,)
+            return (1, )
         else:
             return input_shapes[0][1:]
+
 
 class BroadcastToOp(Op):
     def __call__(self, node_A, node_B):
@@ -426,7 +450,7 @@ class BroadcastToOp(Op):
         return new_node
 
     def compute(self, node, input_vals, output_val, use_numpy=True):
-        assert(len(input_vals)==2)
+        assert (len(input_vals) == 2)
         if use_numpy:
             output_val[:] = np.broadcast_to(input_vals[0], input_vals[1].shape)
         else:
@@ -465,21 +489,23 @@ class SoftmaxCrossEntropyOp(Op):
         y_ = input_vals[1]
         if use_numpy:
             softmax = softmax_func(y)
-            cross_entropy = np.mean(
-                -np.sum(y_ * np.log(softmax), axis=1), keepdims=True)
+            cross_entropy = np.mean(-np.sum(y_ * np.log(softmax), axis=1),
+                                    keepdims=True)
             output_val[:] = cross_entropy
         else:
             gpu_op.softmax_cross_entropy(y, y_, output_val)
 
     def gradient(self, node, output_grad):
-        grad_A = (softmax_op(node.inputs[0]) + -1 * node.inputs[1])*output_grad
+        grad_A = (softmax_op(node.inputs[0]) +
+                  -1 * node.inputs[1]) * output_grad
         grad_B = zeroslike_op(node.inputs[1])
         return [grad_A, grad_B]
 
     def infer_shape(self, node, input_shapes):
         """TODO: Your code here"""
         assert len(input_shapes) == 2
-        return (1,)
+        return (1, )
+
 
 class SoftmaxOp(Op):
     def __call__(self, node_A):
@@ -504,6 +530,7 @@ class SoftmaxOp(Op):
         """TODO: Your code here"""
         assert len(input_shapes) == 1
         return input_shapes[0]
+
 
 class ReluOp(Op):
     def __call__(self, node_A):
@@ -611,7 +638,6 @@ class Executor(object):
             output_shapes = node.op.infer_shape(node, input_shapes)
             self.node_to_shape_map[node] = output_shapes
 
-
     def memory_plan(self, feed_shapes):
         """Allocates ndarray.NDArray for every node except feed_dict nodes.
 
@@ -640,6 +666,7 @@ class Executor(object):
             for i_n in node.inputs:
                 # skip feed node and eval node
                 if i_n in self.feed_shapes or i_n in self.eval_node_list:
+                    node_to_ref[i_n] = -1
                     continue
                 if i_n not in node_to_ref:
                     node_to_ref[i_n] = 0
@@ -651,6 +678,14 @@ class Executor(object):
             arr_node = None
             if node in feed_shapes:
                 continue
+            # optimization for inpulace operation
+            if len(node.inputs) == 1 and shape == self.node_to_shape_map[
+                    node.inputs[0]] and node_to_ref[node.inputs[0]] == 1:
+                arr_node = self.node_to_arr_map[node.inputs[0]]
+                self.node_to_arr_map[node] = self.node_to_arr_map[
+                    node.inputs[0]]
+                continue
+
             for arr in self.memory_pool:
                 if arr.shape == shape:
                     arr_node = arr
@@ -659,7 +694,7 @@ class Executor(object):
             if arr_node is None:
                 arr_node = ndarray.empty(shape, ctx=self.ctx)
             self.node_to_arr_map[node] = arr_node
-            
+            # normal memory plan
             for i_n in node.inputs:
                 # skip feed node and eval node
                 if i_n in self.feed_shapes or i_n in self.eval_node_list:
@@ -667,8 +702,6 @@ class Executor(object):
                 node_to_ref[i_n] -= 1
                 if node_to_ref[i_n] == 0:
                     self.memory_pool.append(self.node_to_arr_map[i_n])
-
-
 
     def run(self, feed_dict, convert_to_numpy_ret_vals=False):
         """
@@ -770,6 +803,7 @@ def gradients(output_node, node_list):
     grad_node_list = [node_to_output_grad[node] for node in node_list]
     return grad_node_list
 
+
 ##################
 # Helper Methods #
 ##################
@@ -817,8 +851,8 @@ def broadcast_rule(shape_a, shape_b):
     https://docs.scipy.org/doc/numpy-1.10.0/user/basics.broadcasting.html
     http://eli.thegreenplace.net/2015/broadcasting-arrays-in-numpy/
     """
-    assert(isinstance(shape_a, tuple))
-    assert(isinstance(shape_b, tuple))
+    assert (isinstance(shape_a, tuple))
+    assert (isinstance(shape_b, tuple))
     if len(shape_a) > len(shape_b):
         longer_shape, shorter_shape = shape_a, shape_b
     else:
@@ -826,7 +860,7 @@ def broadcast_rule(shape_a, shape_b):
     len_diff = len(longer_shape) - len(shorter_shape)
     for i in range(len_diff):
         # pad with leading 1s
-        shorter_shape = (1,) + shorter_shape
+        shorter_shape = (1, ) + shorter_shape
     assert len(shorter_shape) == len(longer_shape)
     output_shape = list(longer_shape)
     for i in range(len(output_shape)):
